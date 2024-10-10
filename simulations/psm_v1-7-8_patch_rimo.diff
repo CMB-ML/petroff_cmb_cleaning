@@ -1,0 +1,80 @@
+diff -ru Soft_orig/instrument/bands/fill_band_data.pro Soft/instrument/bands/fill_band_data.pro
+--- Soft_orig/instrument/bands/fill_band_data.pro	2019-11-08 15:17:11.594616054 -0500
++++ Soft/instrument/bands/fill_band_data.pro	2019-11-08 16:31:54.996838513 -0500
+@@ -19,6 +19,8 @@
+                  ;; (band.version NE '20120124') AND $
+                  ;; (band.version NE 'FFP4_60s_weights_fcbp') AND $
+                  ;; (band.version NE 'FFP4-v1') AND $
++                 (band.version NE 'R2.00') AND $
++                 (band.version NE 'R3.00') AND $
+                  (band.version NE 'FFP4-v2') AND $
+                  (band.version NE 'FFP6-v1') $
+               THEN STOP
+@@ -52,7 +54,7 @@
+                                 ;oplot, nu, value, color=get_color('red')
+                                 ;stop
+ 
+-              band.data = PTR_NEW(GET_BAND_STRUCT('TABLE',nutab=nu, value=value))
++              band.data = PTR_NEW(GET_BAND_STRUCT('TABLE',nutab=nu[UNIQ(nu)], value=value[UNIQ(nu)]))
+               
+            END
+ 
+@@ -67,6 +69,8 @@
+                  ;; (band.version NE '03032011_DX6') AND $
+                  ;; (band.version NE '03062011_DX7') AND $
+                  ;; (band.version NE '30122011_DX8') AND $
++                 (band.version NE 'R2.50') AND $
++                 (band.version NE 'R3.31') AND $
+                  (band.version NE 'FFP4-v1') AND $
+                  (band.version NE 'FFP4-v2') AND $
+                  (band.version NE 'FFP6-v1') $
+@@ -77,6 +81,8 @@
+               IF NOT ok THEN ok = TEST_PSM_DATA(rimofile, /get, /private)
+               IF NOT ok THEN MESSAGE, 'File missing: '+rimofile
+               extension_name = 'BANDPASS_'+PSM_STR_REPLACE(band.channel,'_','-')
++              IF band.version EQ 'R2.50' THEN extension_name = PSM_STR_REPLACE(extension_name,'_F0','_0')
++              IF band.version EQ 'R3.31' THEN extension_name = PSM_STR_REPLACE(extension_name,'_F0','_0')
+               bd = MRDFITS(rimofile,extension_name,/silent) 
+               nu = bd.wavenumber*1e9
+               value = bd.transmission>0
+diff -ru Soft_orig/instrument/general/load_instrument.pro Soft/instrument/general/load_instrument.pro
+--- Soft_orig/instrument/general/load_instrument.pro	2019-11-08 15:17:11.578616742 -0500
++++ Soft/instrument/general/load_instrument.pro	2019-12-17 11:23:01.378566002 -0500
+@@ -348,6 +348,12 @@
+         ;; 'FFP4_60s_weights_fcbp': BEGIN
+         ;;    band = GET_BAND_STRUCT('INSTR',instr='HFI_RIMO',version='FFP4_60s_weights_fcbp',channel=detnum[i])
+         ;; END
++        'R2.00': BEGIN
++           band = GET_BAND_STRUCT('INSTR',instr='HFI_RIMO',version='R2.00',channel=detnum[i])
++        END
++        'R3.00': BEGIN
++           band = GET_BAND_STRUCT('INSTR',instr='HFI_RIMO',version='R3.00',channel=detnum[i])
++        END
+         ELSE: MESSAGE, 'HFI Instrument version not available'
+      ENDCASE
+      FILL_BAND_DATA, band
+@@ -362,12 +368,14 @@
+         'DX8-v1':
+         'DX9-v1':
+         'FFP6-v1': 
++        'R2.00':
++        'R3.00':
+         ELSE: MESSAGE, 'HFI Instrument version not available'
+      ENDCASE
+      IF dobeam THEN BEGIN
+         rimofile = GETPSMDIR('psmdata')+'instrument/planck/RIMO/HFI/HFI_RIMO_'+band.version+'.fits'
+         IF FIRSTCHAR(detnum[i]) EQ 'F' THEN BEGIN
+-           par = MRDFITS(rimofile,'FREQUENCY MAP PARAMETERS',/silent) 
++           par = MRDFITS(rimofile,'MAP_PARAMS',/silent) 
+            wh = WHERE(STRTRIM(par.frequency,2) EQ LASTCHAR(detnum[i],3), nwh)
+         ENDIF ELSE BEGIN
+            par = MRDFITS(rimofile,'CHANNEL PARAMETERS',/silent) 
+@@ -536,6 +544,8 @@
+         'DX7-v1': 
+         'DX8-v1': 
+         'DX9-v1': 
++        'R2.50':
++        'R3.31': 
+         ELSE: MESSAGE, 'LFI Instrument version not available'
+      ENDCASE
+      IF dobeam THEN BEGIN

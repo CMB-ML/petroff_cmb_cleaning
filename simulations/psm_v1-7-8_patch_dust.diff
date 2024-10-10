@@ -1,0 +1,39 @@
+diff -ru Soft_orig/skymodel/galaxy/general/gal_sys_var_init.pro Soft/skymodel/galaxy/general/gal_sys_var_init.pro
+--- Soft_orig/skymodel/galaxy/general/gal_sys_var_init.pro	2019-11-08 15:17:13.070552536 -0500
++++ Soft/skymodel/galaxy/general/gal_sys_var_init.pro	2020-03-13 17:45:39.175213184 -0400
+@@ -159,7 +159,8 @@
+ eptr=ptr_new()  ;Empty pointer
+ 
+ ;--------- thermal dust -----------
+-sfd_st={alpha1:1.5,alpha2:2.6,f1:0.0309,qratio:11.2,T1_av:9.6,T2_av:16.4}  ;FDS model #7
++;sfd_st={alpha1:1.5,alpha2:2.6,f1:0.0309,qratio:11.2,T1_av:9.6,T2_av:16.4}  ;FDS model #7
++sfd_st={alpha1:1.67,alpha2:2.70,f1:0.0363,qratio:13.0,T1_av:9.4,T2_av:16.2} ;FDS model #8
+ bbm_st={kappas:eptr,freqs:eptr,Ts:eptr}
+ thermal_dust = {modelnumber:0, $
+                 sfd_st:sfd_st, $
+diff -ru Soft_orig/skymodel/galaxy/thermaldust/psm_sfd_init.pro Soft/skymodel/galaxy/thermaldust/psm_sfd_init.pro
+--- Soft_orig/skymodel/galaxy/thermaldust/psm_sfd_init.pro	2019-11-08 15:17:13.082552021 -0500
++++ Soft/skymodel/galaxy/thermaldust/psm_sfd_init.pro	2020-03-13 17:47:09.547991075 -0400
+@@ -72,16 +72,18 @@
+                                 ;parameters below are from Finkbeiner et al. 1999, 524 867, Eq B2
+                                 ;T2=exp(2.872+0.2407*d+2.962e-2*d^2+4.719e-3*d^3+9.320e-4*d^4+1.109e-4*d^5)
+                                 ;derived by JPB for Model 7
+-T2=float(exp(2.8883246+0.23886849*d+0.029290881*d^2+0.0053778112*d^3+0.0010268379*d^4+0.00010812753*d^5))
++;T2=float(exp(2.8883246+0.23886849*d+0.029290881*d^2+0.0053778112*d^3+0.0010268379*d^4+0.00010812753*d^5))
++T2=exp(2.872+0.2407*d+2.962e-2*d^2+4.719e-3*d^3+9.320e-4*d^4+1.109e-4*d^5)
+ d = 0
+                                 ;=== Model #7 of Finkbeiner et al.
+                                 ;T1=(T1_av^(4.+alpha1)/T2_av^(4.+alpha2)*T2^(4.+alpha2))^(1./(4.+alpha1))
+-hvk=6.626e-34/1.38e-23*freq0*1.e9
++;hvk=6.626e-34/1.38e-23*freq0*1.e9
+                                 ;have to compute the integral ratio
+                                 ;this way, since the zeta-Rieman function does not seem to exist in
+                                 ;IDL (while the gamma function does). See Eq 16 in Finkbeiner et al.
+-Zfact=qromo('sfd_int_func2',0.,/midexp)/qromo('sfd_int_func1',0.,/midexp)
+-T1=(1./qratio*Zfact*hvk^(alpha1-alpha2)*T2^(4.+alpha2))^(1./(4.+alpha1))
++;Zfact=qromo('sfd_int_func2',0.,/midexp)/qromo('sfd_int_func1',0.,/midexp)
++;T1=(1./qratio*Zfact*hvk^(alpha1-alpha2)*T2^(4.+alpha2))^(1./(4.+alpha1))
++T1=( (9.4^(4.+alpha1)/16.2^(4.+alpha2)) * T2^(4.+alpha2) )^(1./(4.+alpha1))
+    
+ BT10 = PLANCK_BNU(freq0*1d9,temp=T1)*1d20
+ BT20 = PLANCK_BNU(freq0*1d9,temp=T2)*1d20
